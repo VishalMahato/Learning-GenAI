@@ -51,9 +51,8 @@ response = client.chat.completions.create(
         {"role": "system", "content": SYSTEM_PROMPT},
         {"role": "user", "content": "Hey write a code to add n numbers "},
         {"role": "assistant", "content": json.dumps({"step": "START", "content": "Hey write a code to add n numbers"})},
+        {"role": "assistant", "content": json.dumps({"step": "PLAN","content": "The user wants a code to add 'n' numbers. I should provide a solution in a common programming language like Python."})},
         {"role": "assistant", "content": json.dumps({"step": "PLAN","content": "The user wants a code to add 'n' numbers. I should provide a solution in a common programming language like Python."})}
-        {"role": "assistant", "content": json.dumps({"step": "PLAN","content": "The user wants a code to add 'n' numbers. I should provide a solution in a common programming language like Python."})}
-
     ]
 )
 
