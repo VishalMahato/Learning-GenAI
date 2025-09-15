@@ -3,7 +3,8 @@ from dotenv import load_dotenv
 import requests
 from openai import OpenAI
 import os
-
+from pydantic import BaseModel, Field
+from typing import Optional
 # Load environment variables
 load_dotenv()
 # OPENAI_API_KEY = os.getenv("GEMINI_API_KEY")
@@ -65,9 +66,21 @@ def get_weather(city: str):
     return f"something went wrong"
 
 
-available_tools={
-    "get_weather" : get_weather
+available_tools = {
+    "get_weather": get_weather
 }
+
+
+class MyOutputFormat(BaseModel):
+    step: str = Field(...,
+                      description="The ID of the step, Exampel: OUTPUT,PLAN, TOOL, etc. ")
+    content: Optional[str] = Field(
+        None, description="The optional string content for the step")
+    tool: Optional[str] = Field(None, description="The ID of the Tool to call")
+    input: Optional[str] = Field(
+        None, description="The input params for the tool")
+
+
 # Create client
 client = OpenAI(
     # api_key=OPENAI_API_KEY,
@@ -83,35 +96,34 @@ while True:
     message_history.append({"role": "user", "content": user_input})
 
     while True:
-        response = client.chat.completions.create(
+        response = client.chat.completions.parse(
             # model="gemini-2.5-flash",
             model="gpt-4.1-mini",
-            response_format={"type": "json_object"},
-            messages=message_history  
+            response_format=MyOutputFormat,
+            messages=message_history
         )
 
         current_message = response.choices[0].message.content
-        parsed_message = json.loads(current_message)
+        parsed_message = response.choices[0].message.parsed
 
         # assistant's message back into history
-        message_history.append({"role": "assistant", "content": current_message})
-
+        message_history.append(
+            {"role": "assistant", "content": current_message})
 
         print()
 
-
         try:
-            if parsed_message.get("step") == "START":
-                print("🔥", parsed_message.get("content"))
+            if parsed_message.step == "START":
+                print("🔥", parsed_message.content)
                 continue
 
-            if parsed_message.get("step") == "PLAN":
-                print("🧠", parsed_message.get("content"))
+            if parsed_message.step == "PLAN":
+                print("🧠", parsed_message.content)
                 continue
 
-            if parsed_message.get("step") == "TOOL":
-                tool_to_call= parsed_message.get("tool")
-                tool_input= parsed_message.get("input")
+            if parsed_message.step == "TOOL":
+                tool_to_call = parsed_message.tool
+                tool_input = parsed_message.input
                 tool_response = available_tools[tool_to_call](tool_input)
                 print(f"{tool_to_call} : {tool_input} = {tool_response}")
                 observe_message = {
@@ -119,23 +131,33 @@ while True:
                     "tool": tool_to_call,
                     "output": tool_response
                 }
-                message_history.append({"role": "developer", "content": json.dumps(observe_message)})
+                message_history.append(
+                    {"role": "developer", "content": json.dumps(observe_message)})
                 continue
-            if parsed_message.get("step") == "OBSERVE":
-                print("🔥", parsed_message.get("content"))
+            if parsed_message.step == "OBSERVE":
+                print("🔥", parsed_message.content)
                 continue
 
-
-            if parsed_message.get("step") == "OUTPUT":
-                print("✅", parsed_message.get("content"))
+            if parsed_message.step == "OUTPUT":
+                print("✅", parsed_message.content)
                 break
             else:
                 print(parsed_message)
-        except: 
+        except:
             print(parsed_message)
 
 
+    
+    def read_file(file_path): 
+        try: 
+            with open(file_path, 'r', encoding='utf-8') as f: return f.read() 
+        except Exception as e:  return f'Error reading file: {e}' 
+    def create_file(file_path, content=''):  
+        try:
+            with open(file_path, 'w', encoding='utf-8') as f: 
+                f.write(content) 
+                return f'File {file_path} created successfully.' 
+        except Exception as e:  
+            return f'Error creating file: {e}' 
+        
 
-
-
-# print(get_weather("jamshedpur"))
