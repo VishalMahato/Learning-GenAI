@@ -15,3 +15,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+#  ran this in multple reminals so multiple workers spin up -> python -m 10-Rag-Queues.queues.run_worker
